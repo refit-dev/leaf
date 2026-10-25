@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import db from "@/db/drizzle";
 import { userSubscription } from "@/db/schema";
 import { stripe } from "@/lib/stripe";
+import { getSubscriptionPeriodEnd, getInvoiceSubscription } from './stripeSubscriptionPeriod';
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -37,20 +38,20 @@ export async function POST(req: Request) {
       stripeSubscriptionId: subscription.id,
       stripeCustomerId: subscription.customer as string,
       stripePriceId: subscription.items.data[0].price.id,
-      stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      stripeCurrentPeriodEnd: new Date((getSubscriptionPeriodEnd(subscription, (items) => items[0])) * 1000),
     });
   }
 
   if (event.type === "invoice.payment_succeeded") {
     const subscription = await stripe.subscriptions.retrieve(
-      session.subscription as string
+      (getInvoiceSubscription(session)) as string
     );
     await db
       .update(userSubscription)
       .set({
         stripePriceId: subscription.items.data[0].price.id,
         stripeCurrentPeriodEnd: new Date(
-          subscription.current_period_end * 1000
+          (getSubscriptionPeriodEnd(subscription, (items) => items[0])) * 1000
         ),
       })
       .where(eq(userSubscription.stripeSubscriptionId, subscription.id));
