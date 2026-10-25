@@ -24,14 +24,14 @@ export const createStripeUrl = async () => {
 
   const stripeSession = await stripe.checkout.sessions.create({
     mode: "subscription",
-    payment_method_types: ["card"],
+    allowed_payment_method_types: ["card"],
     customer_email: user.emailAddresses[0].emailAddress,
     billing_address_collection: "required",
     line_items: [
       {
         quantity: 1,
         price_data: {
-          currency: "INR",
+          currency: "inr",
           product_data: {
             name: "LEAF Pro",
             description: "Unlimited Hearts",
